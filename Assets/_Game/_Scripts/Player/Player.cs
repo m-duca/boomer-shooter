@@ -35,7 +35,8 @@ namespace BoomerShooter
             CharacterInput characterInput = new CharacterInput
             {
                 Rotation = _playerCamera.transform.rotation,
-                Move = inputMap.Move.ReadValue<Vector2>()
+                Move = inputMap.Move.ReadValue<Vector2>(),
+                Jump = inputMap.Jump.WasPressedThisFrame()
             };
             _playerCharacterController.UpdateInput(characterInput);
         }

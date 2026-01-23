@@ -6,5 +6,6 @@ namespace BoomerShooter
     {
         public Quaternion Rotation;
         public Vector2 Move;
+        public bool Jump;
     }
 }

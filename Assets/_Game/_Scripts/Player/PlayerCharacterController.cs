@@ -9,11 +9,16 @@ namespace BoomerShooter
         [SerializeField] private KinematicCharacterMotor _motor;
         [SerializeField] private Transform _cameraTarget;
 
-        [Header("Configurações")]
+        [Header("Andar")]
         [SerializeField] private float _moveSpeed;
+
+        [Header("Pulo")]
+        [SerializeField] private float _jumpForce;
+        [SerializeField] private float _gravityForce;
 
         private Quaternion _requestedRotation;
         private Vector3 _requestedMovement;
+        private bool _requestedJump;
 
         public void Initialize()
         {
@@ -29,20 +34,48 @@ namespace BoomerShooter
 
             // Mantendo o vetor de movimentacao relativo a direcao de orientacao atual
             _requestedMovement = input.Rotation * _requestedMovement;
+
+            _requestedJump = _requestedJump || input.Jump;
         }
 
         public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
         {
-            Vector3 groundedMovement = _motor.GetDirectionTangentToSurface(_requestedMovement, _motor.GroundingStatus.GroundNormal);
-            groundedMovement *= _requestedMovement.magnitude;
-            currentVelocity = groundedMovement * _moveSpeed;
+            // Se estiver no chão
+            if (_motor.GroundingStatus.IsStableOnGround)
+            {
+                // Fixando direção de movimento ao chão
+                Vector3 groundedMovement = _motor.GetDirectionTangentToSurface(_requestedMovement, _motor.GroundingStatus.GroundNormal);
+                groundedMovement *= _requestedMovement.magnitude;
+
+                // Aplicando movimento
+                currentVelocity = groundedMovement * _moveSpeed * deltaTime;
+            }
+            else // No ar
+            {
+                // Aplicando gravidade
+                currentVelocity += _motor.CharacterUp * _gravityForce * deltaTime;
+            }
+
+            if (_requestedJump)
+            {
+                _requestedJump = false;
+
+                // Desfixando player do chão
+                _motor.ForceUnground(0f);
+
+                // Adicionado força do pulo
+                float currentVerticalSpeed = Vector3.Dot(currentVelocity, _motor.CharacterUp);
+                float targetVerticalSpeed = Mathf.Max(currentVerticalSpeed, _jumpForce);
+                currentVelocity += _motor.CharacterUp * (targetVerticalSpeed - currentVerticalSpeed);
+            }
         }
 
         public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
         {
             Vector3 forward = Vector3.ProjectOnPlane(_requestedRotation * Vector3.forward, _motor.CharacterUp);
 
-            currentRotation = Quaternion.LookRotation(forward, _motor.CharacterUp);
+            if (forward != Vector3.zero)
+                currentRotation = Quaternion.LookRotation(forward, _motor.CharacterUp);
         }
 
         public void AfterCharacterUpdate(float deltaTime)
@@ -55,7 +88,7 @@ namespace BoomerShooter
 
         public bool IsColliderValidForCollisions(Collider coll)
         {
-            throw new System.NotImplementedException();
+            return true;
         }
 
         public void OnDiscreteCollisionDetected(Collider hitCollider)
