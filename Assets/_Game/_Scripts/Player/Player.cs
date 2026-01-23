@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 using static InputActions;
 
 namespace BoomerShooter
@@ -35,7 +34,8 @@ namespace BoomerShooter
             // Atualizando orientação do Character Controller
             CharacterInput characterInput = new CharacterInput
             {
-                Rotation = _playerCamera.transform.rotation
+                Rotation = _playerCamera.transform.rotation,
+                Move = inputMap.Move.ReadValue<Vector2>()
             };
             _playerCharacterController.UpdateInput(characterInput);
         }

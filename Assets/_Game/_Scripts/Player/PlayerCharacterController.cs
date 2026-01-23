@@ -9,7 +9,11 @@ namespace BoomerShooter
         [SerializeField] private KinematicCharacterMotor _motor;
         [SerializeField] private Transform _cameraTarget;
 
+        [Header("Configurações")]
+        [SerializeField] private float _moveSpeed;
+
         private Quaternion _requestedRotation;
+        private Vector3 _requestedMovement;
 
         public void Initialize()
         {
@@ -19,10 +23,19 @@ namespace BoomerShooter
         public void UpdateInput(CharacterInput input)
         {
             _requestedRotation = input.Rotation;
+
+            _requestedMovement = new Vector3(input.Move.x, 0f, input.Move.y);
+            _requestedMovement = Vector3.ClampMagnitude(_requestedMovement, 1f);
+
+            // Mantendo o vetor de movimentacao relativo a direcao de orientacao atual
+            _requestedMovement = input.Rotation * _requestedMovement;
         }
 
         public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
         {
+            Vector3 groundedMovement = _motor.GetDirectionTangentToSurface(_requestedMovement, _motor.GroundingStatus.GroundNormal);
+            groundedMovement *= _requestedMovement.magnitude;
+            currentVelocity = groundedMovement * _moveSpeed;
         }
 
         public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
